@@ -62,6 +62,9 @@ export function Sidebar({
           <LogOut size={20} />
           লগআউট
         </button>
+        <p className="mt-3 text-center text-[11px] text-emerald-200/70">
+          Developed with 💙 by Saddam Bin Mazid
+        </p>
       </div>
     </div>
   );

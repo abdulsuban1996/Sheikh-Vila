@@ -10,7 +10,7 @@ export default async function LoginPage({
 }) {
   const { error } = await searchParams;
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-900 via-emerald-700 to-cyan-700 p-4">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-emerald-900 via-emerald-700 to-cyan-700 p-4">
       <div className="animate-rise w-full max-w-md rounded-2xl bg-white p-6 shadow-xl sm:p-8">
         <div className="mb-6 text-center">
           <span className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-900 text-white">
@@ -24,6 +24,9 @@ export default async function LoginPage({
           অ্যাকাউন্ট পেতে অ্যাডমিনের সাথে যোগাযোগ করুন
         </p>
       </div>
+      <p className="mt-6 text-center text-xs font-medium text-emerald-100/90 sm:text-sm">
+        Developed with 💙 by Saddam Bin Mazid
+      </p>
     </main>
   );
 }

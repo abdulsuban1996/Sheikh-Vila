@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button, inputClass } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Modal";
@@ -13,6 +13,7 @@ const LOCK_SECONDS = 30;
 export function LoginForm({ notApproved }: { notApproved: boolean }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(
     notApproved ? "আপনার অ্যাকাউন্টের অ্যাক্সেস নেই। অ্যাডমিনের সাথে যোগাযোগ করুন।" : "",
   );
@@ -76,8 +77,24 @@ export function LoginForm({ notApproved }: { notApproved: boolean }) {
           value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
       </Field>
       <Field label="পাসওয়ার্ড" htmlFor="password">
-        <input id="password" type="password" autoComplete="current-password" className={inputClass}
-          value={password} onChange={(e) => setPassword(e.target.value)} />
+        <div className="relative">
+          <input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            className={`${inputClass} pr-11`}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            aria-label={showPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখুন"}
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:text-slate-600 focus:outline-none"
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </div>
       </Field>
       <Button type="submit" loading={loading} disabled={lock > 0} className="w-full">
         লগইন করুন

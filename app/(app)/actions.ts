@@ -8,3 +8,10 @@ export async function revalidateAll() {
     revalidatePath(p);
   }
 }
+
+/** Called after any shopping-list write. */
+export async function revalidateShopping() {
+  for (const p of ["/shopping", "/dashboard"]) {
+    revalidatePath(p);
+  }
+}

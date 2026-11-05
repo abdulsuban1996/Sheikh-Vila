@@ -73,6 +73,8 @@ export interface ShoppingItem {
   is_bought: boolean;
   bought_at: string | null;
   created_at: string;
+  price: number | null;
+  bought_by: string | null;
 }
 
 export interface SummaryRow {

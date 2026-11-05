@@ -1,10 +1,8 @@
-import { ShoppingBasket, ListTodo, CheckCheck, Layers } from "lucide-react";
+import { ShoppingBasket } from "lucide-react";
 import { requireMember } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PageBanner } from "@/components/ui/PageBanner";
-import { StatCard } from "@/components/ui/Card";
 import { ShoppingClient } from "@/components/shopping/ShoppingClient";
-import { toBn } from "@/lib/bn";
 import type { Profile, ShoppingItem } from "@/lib/types";
 
 export const metadata = { title: "বাজারের তালিকা — শেখ ভিলা" };
@@ -14,13 +12,15 @@ export default async function ShoppingPage() {
   const supabase = await createClient();
   const [{ data }, { data: profs }] = await Promise.all([
     supabase.from("shopping_items").select("*").order("created_at", { ascending: false }),
-    supabase.from("profiles").select("id, full_name"),
+    supabase.from("profiles").select("id, full_name, is_active"),
   ]);
-  const items = (data ?? []) as ShoppingItem[];
-  const names = Object.fromEntries(((profs ?? []) as Profile[]).map((p) => [p.id, p.full_name]));
-  const pending = items.filter((i) => !i.is_bought).length;
-  const bought = items.length - pending;
-  const pct = items.length ? Math.round((bought / items.length) * 100) : 0;
+  const items = ((data ?? []) as ShoppingItem[]).map((i) => ({
+    ...i,
+    price: i.price === null || i.price === undefined ? null : Number(i.price),
+  }));
+  const all = (profs ?? []) as Profile[];
+  const names = Object.fromEntries(all.map((p) => [p.id, p.full_name]));
+  const members = all.filter((p) => p.is_active).map((p) => ({ id: p.id, full_name: p.full_name }));
 
   return (
     <div className="space-y-5">
@@ -28,15 +28,16 @@ export default async function ShoppingPage() {
         icon={<ShoppingBasket size={28} />}
         label="বাজারের তালিকা"
         title="কী কিনতে হবে, সবাই মিলে লিখুন"
-        subtitle="কেনা হলে টিক দিন, তালিকা নিজেই গুছিয়ে যাবে।"
+        subtitle="কেনা হলে টিক দিন, দাম লিখুন, কে কিনলেন আর কখন, সব জমা থাকবে।"
       />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-        <StatCard tone="orange" icon={<ListTodo size={22} />} badge="বাকি" label="কিনতে হবে" value={toBn(pending)} />
-        <StatCard tone="emerald" icon={<CheckCheck size={22} />} badge="সম্পন্ন" label="কেনা হয়েছে" value={toBn(bought)} />
-        <StatCard tone="blue" icon={<Layers size={22} />} badge="মোট" label="মোট জিনিস" value={toBn(items.length)} />
-        <StatCard tone="purple" icon={<ShoppingBasket size={22} />} badge="অগ্রগতি" label="কেনা শেষ" value={`${toBn(pct)}%`} />
-      </div>
-      <ShoppingClient items={items} names={names} meId={profile.id} isAdmin={profile.role === "admin"} />
+      <ShoppingClient
+        items={items}
+        names={names}
+        members={members}
+        meId={profile.id}
+        meName={profile.full_name}
+        isAdmin={profile.role === "admin"}
+      />
     </div>
   );
 }

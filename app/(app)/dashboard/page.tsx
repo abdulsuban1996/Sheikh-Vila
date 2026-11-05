@@ -19,7 +19,7 @@ export default async function DashboardPage() {
   const month = todayDhaka().slice(0, 7);
   const [start, end] = monthRange(month);
 
-  const [profilesR, expensesR, recentR, shopR, summaryR, fundSumR, fundMemR, fundRecentR] = await Promise.all([
+  const [profilesR, expensesR, recentR, shopR, summaryR, fundSumR, fundMemR, fundRecentR, lastBoughtR] = await Promise.all([
     supabase.from("profiles").select("id, full_name, role, is_active"),
     supabase.from("expenses").select("paid_by, amount").gte("expense_date", start).lt("expense_date", end),
     supabase.from("expenses").select("*").order("expense_date", { ascending: false }).order("created_at", { ascending: false }).limit(8),
@@ -28,7 +28,9 @@ export default async function DashboardPage() {
     supabase.rpc("fund_summary"),
     supabase.rpc("fund_by_member"),
     supabase.from("fund_entries").select("*").order("entry_date", { ascending: false }).order("created_at", { ascending: false }).limit(6),
+    supabase.from("shopping_items").select("name, price, bought_by").eq("is_bought", true).not("bought_at", "is", null).order("bought_at", { ascending: false }).limit(1),
   ]);
+  const lastBought = (lastBoughtR.data ?? [])[0] as { name: string; price: number | null; bought_by: string | null } | undefined;
 
   // fund section is hidden until the fund migration has been run
   const fundOk = !fundSumR.error && !fundMemR.error && !fundRecentR.error;
@@ -177,6 +179,13 @@ export default async function DashboardPage() {
 
         <SectionCard className="lg:col-span-2" tone="orange" title="বাজারের তালিকা" icon={<ShoppingBasket size={18} />}
           action={<span className="rounded-full bg-white/25 px-3 py-1 text-sm font-semibold">{toBn(pending.length)} টি বাকি</span>}>
+          {lastBought && (
+            <p className="border-b border-slate-100 px-5 py-2.5 text-sm text-slate-500">
+              সর্বশেষ কেনা: <span className="font-medium text-slate-700">{lastBought.name}</span>
+              {lastBought.price !== null && lastBought.price !== undefined && <> — {formatTaka(lastBought.price)}</>}
+              {lastBought.bought_by && nameOf.get(lastBought.bought_by) && <>, {nameOf.get(lastBought.bought_by)}</>}
+            </p>
+          )}
           {pending.length === 0 ? (
             <EmptyState text="তালিকায় কিছু বাকি নেই" icon={<ShoppingBasket size={40} />} />
           ) : (

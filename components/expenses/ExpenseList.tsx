@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/Toast";
 import { ExpenseModal, type MemberOption } from "./ExpenseModal";
 import { CATEGORY_META } from "./category";
 import { createClient } from "@/lib/supabase/client";
+import { revalidateAll } from "@/app/(app)/actions";
 import { formatShortDateBn, formatTaka, toBn } from "@/lib/bn";
 import { categoryLabel, type Expense } from "@/lib/types";
 
@@ -51,6 +52,7 @@ export function ExpenseList({
     setBusy(null);
     if (error) return toast("মুছে ফেলা যায়নি", "error");
     toast("খরচ মুছে ফেলা হয়েছে");
+    await revalidateAll();
     router.refresh();
   }
 
@@ -109,6 +111,7 @@ export function ExpenseList({
                       <span className={`inline-flex rounded-full px-2.5 py-1 text-sm font-semibold ${CATEGORY_META[e.category].badge}`}>
                         {categoryLabel(e.category)}
                       </span>
+                      {e.from_fund && <span className="ml-1.5 inline-flex rounded-full bg-teal-50 px-2.5 py-1 text-sm font-semibold text-teal-700">ফান্ড</span>}
                     </td>
                     <td className="px-3 py-3">
                       <span className="flex items-center gap-2 text-slate-700">
@@ -158,8 +161,11 @@ export function ExpenseList({
                         </p>
                       )}
                       <div className="mt-2 flex items-center justify-between">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${CATEGORY_META[e.category].badge}`}>
-                          {categoryLabel(e.category)}
+                        <span className="flex items-center gap-1.5">
+                          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${CATEGORY_META[e.category].badge}`}>
+                            {categoryLabel(e.category)}
+                          </span>
+                          {e.from_fund && <span className="inline-flex rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">ফান্ড</span>}
                         </span>
                         {canEdit(e) && <Actions busy={busy === e.id} onEdit={() => openEdit(e)} onDelete={() => remove(e)} />}
                       </div>

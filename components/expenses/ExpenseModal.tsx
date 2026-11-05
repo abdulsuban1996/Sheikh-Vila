@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/Toast";
 import { CATEGORY_META } from "./category";
 import { createClient } from "@/lib/supabase/client";
 import { toBn } from "@/lib/bn";
+import { revalidateAll } from "@/app/(app)/actions";
 import { todayDhaka } from "@/lib/month";
 import { CATEGORIES, type Category, type Expense, type Profile } from "@/lib/types";
 
@@ -39,6 +40,7 @@ export function ExpenseModal({
   const [date, setDate] = useState(todayDhaka());
   const [paidBy, setPaidBy] = useState(meId);
   const [note, setNote] = useState("");
+  const [fromFund, setFromFund] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<{ title?: string; amount?: string }>({});
 
@@ -51,6 +53,7 @@ export function ExpenseModal({
     setDate(expense?.expense_date ?? todayDhaka());
     setPaidBy(expense?.paid_by ?? meId);
     setNote(expense?.note ?? "");
+    setFromFund(!!expense?.from_fund);
   }, [open, expense, meId]);
 
   async function submit(e: React.FormEvent) {
@@ -74,6 +77,8 @@ export function ExpenseModal({
       expense_date: date,
       paid_by: isAdmin ? paidBy : meId,
       note: note.trim() || null,
+      // only the admin may set this (RLS enforces it too)
+      ...(isAdmin && (fromFund || expense?.from_fund) ? { from_fund: fromFund } : {}),
     };
     const { error } = expense
       ? await supabase.from("expenses").update(payload).eq("id", expense.id)
@@ -85,6 +90,7 @@ export function ExpenseModal({
     }
     toast(expense ? "খরচ আপডেট হয়েছে" : "খরচ যোগ হয়েছে");
     onClose();
+    await revalidateAll();
     router.refresh();
   }
 
@@ -192,6 +198,27 @@ export function ExpenseModal({
             </Field>
           )}
         </div>
+
+        {isAdmin && (
+          <label
+            htmlFor="x-fund"
+            className={`flex min-h-[56px] cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-3 transition ${
+              fromFund ? "border-teal-500 bg-teal-50" : "border-slate-100 bg-white hover:border-slate-200"
+            }`}
+          >
+            <input
+              id="x-fund"
+              type="checkbox"
+              checked={fromFund}
+              onChange={(e) => setFromFund(e.target.checked)}
+              className="h-6 w-6 shrink-0 accent-teal-600"
+            />
+            <span className="flex-1">
+              <span className="block font-semibold text-slate-800">ফান্ড থেকে দেওয়া হয়েছে</span>
+              <span className="block text-sm text-slate-500">চালু করলে এই খরচ সদস্যদের মাসিক ভাগে ধরা হবে না</span>
+            </span>
+          </label>
+        )}
 
         {/* Note */}
         <Field label="নোট (ঐচ্ছিক)" htmlFor="x-note">

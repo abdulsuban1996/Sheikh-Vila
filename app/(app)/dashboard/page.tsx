@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/Badge";
 import { AddExpenseFab } from "@/components/expenses/AddExpenseFab";
 import { formatDateBn, formatShortDateBn, formatTaka, toBn } from "@/lib/bn";
 import { monthLabel, monthRange, todayDhaka } from "@/lib/month";
-import type { Expense, Profile, ShoppingItem, SummaryRow } from "@/lib/types";
+import type { Expense, FundEntry, FundMemberRow, FundSummary, Profile, ShoppingItem, SummaryRow } from "@/lib/types";
+import { FundHero } from "@/components/fund/FundHero";
+import { PiggyBank, ArrowLeftRight } from "lucide-react";
 
 export const metadata = { title: "ড্যাশবোর্ড — শেখ ভিলা" };
 
@@ -17,13 +19,29 @@ export default async function DashboardPage() {
   const month = todayDhaka().slice(0, 7);
   const [start, end] = monthRange(month);
 
-  const [profilesR, expensesR, recentR, shopR, summaryR] = await Promise.all([
+  const [profilesR, expensesR, recentR, shopR, summaryR, fundSumR, fundMemR, fundRecentR] = await Promise.all([
     supabase.from("profiles").select("id, full_name, role, is_active"),
     supabase.from("expenses").select("paid_by, amount").gte("expense_date", start).lt("expense_date", end),
     supabase.from("expenses").select("*").order("expense_date", { ascending: false }).order("created_at", { ascending: false }).limit(8),
     supabase.from("shopping_items").select("*").eq("is_bought", false).order("created_at", { ascending: false }),
     supabase.rpc("monthly_summary", { p_month: start }),
+    supabase.rpc("fund_summary"),
+    supabase.rpc("fund_by_member"),
+    supabase.from("fund_entries").select("*").order("entry_date", { ascending: false }).order("created_at", { ascending: false }).limit(6),
   ]);
+
+  // fund section is hidden until the fund migration has been run
+  const fundOk = !fundSumR.error && !fundMemR.error && !fundRecentR.error;
+  const fRaw = (fundSumR.data ?? [])[0] as FundSummary | undefined;
+  const fund = {
+    balance: Number(fRaw?.balance ?? 0),
+    deposit: Number(fRaw?.total_deposit ?? 0),
+    withdrawal: Number(fRaw?.total_withdrawal ?? 0),
+    spent: Number(fRaw?.total_spent ?? 0),
+  };
+  const fundByMember = ((fundMemR.data ?? []) as FundMemberRow[]).map((r) => ({ ...r, deposited: Number(r.deposited) }));
+  const fundRecent = (fundRecentR.data ?? []) as FundEntry[];
+  const maxDeposit = Math.max(1, ...fundByMember.map((r) => r.deposited));
 
   const members = ((profilesR.data ?? []) as Profile[]).filter((p) => p.is_active);
   const nameOf = new Map(members.map((m) => [m.id, m.full_name]));
@@ -67,6 +85,59 @@ export default async function DashboardPage() {
           <p className="font-semibold">{formatDateBn(new Date())}</p>
         </div>
       </div>
+
+      {fundOk && (
+        <>
+          <FundHero balance={fund.balance} deposit={fund.deposit} withdrawal={fund.withdrawal} spent={fund.spent} />
+          <div className="grid gap-5 lg:grid-cols-2">
+            <SectionCard tone="purple" title="সদস্যভিত্তিক জমা" icon={<PiggyBank size={18} />}>
+              {fund.deposit === 0 ? (
+                <EmptyState text="ফান্ডে এখনো কোনো জমা নেই" icon={<PiggyBank size={40} />} />
+              ) : (
+                <ul className="space-y-4 p-5">
+                  {fundByMember.map((r) => (
+                    <li key={r.member_id} className="flex items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-sm font-bold text-purple-700">{r.full_name.slice(0, 1)}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1 flex justify-between gap-2 text-sm">
+                          <span className="truncate font-medium text-slate-700">{r.full_name}</span>
+                          <span className="font-semibold text-slate-800">{formatTaka(r.deposited)}</span>
+                        </div>
+                        <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                          <div className="bar-grow h-full rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500" style={{ width: `${(r.deposited / maxDeposit) * 100}%` }} />
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {r.last_deposit ? `শেষ জমা: ${formatShortDateBn(r.last_deposit)}` : "এখনো জমা দেননি"}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </SectionCard>
+
+            <SectionCard tone="cyan" title="সাম্প্রতিক ফান্ড লেনদেন" icon={<ArrowLeftRight size={18} />}
+              action={<Link href="/fund" className="rounded-lg bg-white/20 px-3 py-1.5 text-sm font-medium hover:bg-white/30">সব দেখুন</Link>}>
+              {fundRecent.length === 0 ? (
+                <EmptyState text="ফান্ডে এখনো কোনো জমা নেই" icon={<ArrowLeftRight size={40} />} />
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {fundRecent.map((f) => (
+                    <li key={f.id} className="flex items-center gap-3 px-5 py-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-slate-800">{nameOf.get(f.member_id) ?? "—"}</p>
+                        <p className="text-sm text-slate-500">{formatShortDateBn(f.entry_date)}</p>
+                      </div>
+                      <Badge tone={f.kind === "deposit" ? "green" : "orange"}>{f.kind === "deposit" ? "জমা" : "ফেরত"}</Badge>
+                      <Badge tone={f.kind === "deposit" ? "green" : "orange"}>{formatTaka(f.amount)}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </SectionCard>
+          </div>
+        </>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">

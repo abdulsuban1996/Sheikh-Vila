@@ -30,6 +30,39 @@ export interface Expense {
   note: string | null;
   created_by: string;
   created_at: string;
+  /** true when paid from the family fund (only admin can set it) */
+  from_fund?: boolean;
+}
+
+export type FundKind = "deposit" | "withdrawal";
+
+export interface FundEntry {
+  id: string;
+  member_id: string;
+  kind: FundKind;
+  amount: number;
+  entry_date: string;
+  note: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+/** rpc fund_summary() */
+export interface FundSummary {
+  total_deposit: number;
+  total_withdrawal: number;
+  total_spent: number;
+  balance: number;
+}
+
+/** rpc fund_by_member() */
+export interface FundMemberRow {
+  member_id: string;
+  full_name: string;
+  deposited: number;
+  withdrawn: number;
+  net: number;
+  last_deposit: string | null;
 }
 
 export interface ShoppingItem {

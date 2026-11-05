@@ -5,6 +5,7 @@ import {
   Calculator,
   Users,
   Settings,
+  PiggyBank,
   type LucideIcon,
 } from "lucide-react";
 
@@ -22,6 +23,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "ড্যাশবোর্ড", icon: LayoutDashboard },
   { href: "/expenses", label: "বাজার ও খরচ", icon: Receipt },
+  { href: "/fund", label: "ফান্ড", icon: PiggyBank },
   { href: "/shopping", label: "বাজারের তালিকা", icon: ShoppingBasket },
   { href: "/summary", label: "মাসিক হিসাব", icon: Calculator },
   { href: "/members", label: "সদস্য তালিকা", icon: Users, adminOnly: true },

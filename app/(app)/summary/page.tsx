@@ -23,6 +23,15 @@ export default async function SummaryPage({
   const [start] = monthRange(month);
   const supabase = await createClient();
   const { data } = await supabase.rpc("monthly_summary", { p_month: start });
+  const [mStart, mEnd] = monthRange(month);
+  // expenses paid from the fund are not split among members (ignored if the fund migration is not run yet)
+  const { data: fundSpentRows } = await supabase
+    .from("expenses")
+    .select("amount")
+    .eq("from_fund", true)
+    .gte("expense_date", mStart)
+    .lt("expense_date", mEnd);
+  const fundSpent = ((fundSpentRows ?? []) as { amount: number }[]).reduce((s, r) => s + Number(r.amount), 0);
   const rows = ((data ?? []) as SummaryRow[]).map((r) => ({
     ...r,
     paid: Number(r.paid),
@@ -61,6 +70,10 @@ export default async function SummaryPage({
         <StatCard tone="blue" icon={<TrendingUp size={22} />} badge="সর্বোচ্চ" label="সবচেয়ে বেশি দিয়েছে" value={top.paid > 0 ? top.full_name : "—"}
           valueClass="text-xl sm:text-2xl truncate" chips={top.paid > 0 ? [formatTaka(top.paid)] : []} />
       </div>
+
+      <p className="rounded-xl bg-slate-50 px-4 py-2.5 text-sm text-slate-500 print-card">
+        ফান্ড থেকে খরচ এ মাসে: <span className="font-semibold text-slate-700">{formatTaka(fundSpent)}</span> — জনপ্রতি ভাগে ধরা হয়নি
+      </p>
 
       <SectionCard tone="blue" title="সদস্যভিত্তিক হিসাব" icon={<Calculator size={18} />}>
         {rows.length === 0 ? (

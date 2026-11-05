@@ -3,20 +3,25 @@ import { requireMember } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PageBanner } from "@/components/ui/PageBanner";
 import { ShoppingClient } from "@/components/shopping/ShoppingClient";
-import type { Profile, ShoppingItem } from "@/lib/types";
+import type { Profile, ShoppingItem, ShoppingPurchase } from "@/lib/types";
 
 export const metadata = { title: "বাজারের তালিকা — শেখ ভিলা" };
 
 export default async function ShoppingPage() {
   const { profile } = await requireMember();
   const supabase = await createClient();
-  const [{ data }, { data: profs }] = await Promise.all([
+  const [{ data }, { data: profs }, { data: purchasesData }] = await Promise.all([
     supabase.from("shopping_items").select("*").order("created_at", { ascending: false }),
     supabase.from("profiles").select("id, full_name, is_active"),
+    supabase.from("shopping_purchases").select("*").order("bought_at", { ascending: false }),
   ]);
   const items = ((data ?? []) as ShoppingItem[]).map((i) => ({
     ...i,
     price: i.price === null || i.price === undefined ? null : Number(i.price),
+  }));
+  const purchases = ((purchasesData ?? []) as ShoppingPurchase[]).map((p) => ({
+    ...p,
+    total_price: Number(p.total_price),
   }));
   const all = (profs ?? []) as Profile[];
   const names = Object.fromEntries(all.map((p) => [p.id, p.full_name]));
@@ -32,6 +37,7 @@ export default async function ShoppingPage() {
       />
       <ShoppingClient
         items={items}
+        purchases={purchases}
         names={names}
         members={members}
         meId={profile.id}

@@ -75,6 +75,19 @@ export interface ShoppingItem {
   created_at: string;
   price: number | null;
   bought_by: string | null;
+  /** set when the item was bought together with others (one total price) */
+  purchase_id?: string | null;
+}
+
+/** One shopping trip with ONE total price for several items. */
+export interface ShoppingPurchase {
+  id: string;
+  total_price: number;
+  bought_by: string;
+  bought_at: string;
+  note: string | null;
+  created_by: string;
+  created_at: string;
 }
 
 export interface SummaryRow {

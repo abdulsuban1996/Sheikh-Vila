@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Home, Users, Wallet, HandCoins, Scale, Receipt, ShoppingBasket, BarChart3, Star } from "lucide-react";
 import { requireMember } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { Card, SectionCard, StatCard, EmptyState } from "@/components/ui/Card";
+import { SectionCard, StatCard, EmptyState } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { AddExpenseFab } from "@/components/expenses/AddExpenseFab";
 import { formatDateBn, formatShortDateBn, formatTaka, toBn } from "@/lib/bn";
@@ -19,7 +19,7 @@ export default async function DashboardPage() {
   const month = todayDhaka().slice(0, 7);
   const [start, end] = monthRange(month);
 
-  const [profilesR, expensesR, recentR, shopR, summaryR, fundSumR, fundMemR, fundRecentR, lastBoughtR] = await Promise.all([
+  const [profilesR, expensesR, recentR, shopR, summaryR, fundSumR, fundMemR, fundRecentR, lastBoughtItemR, lastPurchaseR] = await Promise.all([
     supabase.from("profiles").select("id, full_name, role, is_active"),
     supabase.from("expenses").select("paid_by, amount").gte("expense_date", start).lt("expense_date", end),
     supabase.from("expenses").select("*").order("expense_date", { ascending: false }).order("created_at", { ascending: false }).limit(8),
@@ -28,9 +28,39 @@ export default async function DashboardPage() {
     supabase.rpc("fund_summary"),
     supabase.rpc("fund_by_member"),
     supabase.from("fund_entries").select("*").order("entry_date", { ascending: false }).order("created_at", { ascending: false }).limit(6),
-    supabase.from("shopping_items").select("name, price, bought_by").eq("is_bought", true).not("bought_at", "is", null).order("bought_at", { ascending: false }).limit(1),
+    supabase.from("shopping_items").select("name, price, bought_by, bought_at, purchase_id").eq("is_bought", true).not("bought_at", "is", null).order("bought_at", { ascending: false }).limit(1),
+    supabase.from("shopping_purchases").select("id, total_price, bought_by, bought_at").order("bought_at", { ascending: false }).limit(1),
   ]);
-  const lastBought = (lastBoughtR.data ?? [])[0] as { name: string; price: number | null; bought_by: string | null } | undefined;
+
+  // "সর্বশেষ কেনা" — pick whichever is more recent: a solo item or a purchase group
+  type LastBoughtSolo = { kind: "solo"; name: string; price: number | null; bought_by: string | null };
+  type LastBoughtGroup = { kind: "group"; total_price: number; bought_by: string };
+  type LastBoughtDisplay = LastBoughtSolo | LastBoughtGroup;
+
+  const lbItem = (lastBoughtItemR.data ?? [])[0] as {
+    name: string; price: number | null; bought_by: string | null; bought_at: string; purchase_id: string | null
+  } | undefined;
+  const lbPurchase = (lastPurchaseR.data ?? [])[0] as {
+    id: string; total_price: number; bought_by: string; bought_at: string
+  } | undefined;
+
+  let lastBought: LastBoughtDisplay | undefined;
+  if (lbItem && lbPurchase) {
+    if (lbItem.bought_at >= lbPurchase.bought_at) {
+      // Most recent is an item — if it belongs to a group, show that group
+      if (lbItem.purchase_id) {
+        lastBought = { kind: "group", total_price: Number(lbPurchase.total_price), bought_by: lbPurchase.bought_by };
+      } else {
+        lastBought = { kind: "solo", name: lbItem.name, price: lbItem.price !== null ? Number(lbItem.price) : null, bought_by: lbItem.bought_by };
+      }
+    } else {
+      lastBought = { kind: "group", total_price: Number(lbPurchase.total_price), bought_by: lbPurchase.bought_by };
+    }
+  } else if (lbItem) {
+    lastBought = { kind: "solo", name: lbItem.name, price: lbItem.price !== null ? Number(lbItem.price) : null, bought_by: lbItem.bought_by };
+  } else if (lbPurchase) {
+    lastBought = { kind: "group", total_price: Number(lbPurchase.total_price), bought_by: lbPurchase.bought_by };
+  }
 
   // fund section is hidden until the fund migration has been run
   const fundOk = !fundSumR.error && !fundMemR.error && !fundRecentR.error;
@@ -181,9 +211,18 @@ export default async function DashboardPage() {
           action={<span className="rounded-full bg-white/25 px-3 py-1 text-sm font-semibold">{toBn(pending.length)} টি বাকি</span>}>
           {lastBought && (
             <p className="border-b border-slate-100 px-5 py-2.5 text-sm text-slate-500">
-              সর্বশেষ কেনা: <span className="font-medium text-slate-700">{lastBought.name}</span>
-              {lastBought.price !== null && lastBought.price !== undefined && <> — {formatTaka(lastBought.price)}</>}
-              {lastBought.bought_by && nameOf.get(lastBought.bought_by) && <>, {nameOf.get(lastBought.bought_by)}</>}
+              {lastBought.kind === "solo" ? (
+                <>
+                  সর্বশেষ কেনা: <span className="font-medium text-slate-700">{lastBought.name}</span>
+                  {lastBought.price !== null && lastBought.price !== undefined && <> — {formatTaka(lastBought.price)}</>}
+                  {lastBought.bought_by && nameOf.get(lastBought.bought_by) && <>, {nameOf.get(lastBought.bought_by)}</>}
+                </>
+              ) : (
+                <>
+                  সর্বশেষ কেনা: <span className="font-medium text-slate-700">একসাথে কেনা — {formatTaka(lastBought.total_price)}</span>
+                  {nameOf.get(lastBought.bought_by) && <>, {nameOf.get(lastBought.bought_by)}</>}
+                </>
+              )}
             </p>
           )}
           {pending.length === 0 ? (

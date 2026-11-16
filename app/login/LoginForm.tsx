@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Button, inputClass } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Modal";
 import { toBn } from "@/lib/bn";
+import { toLoginEmail } from "@/lib/username";
+import { SESSION_FLAG } from "@/components/auth/SessionGuard";
 
 const MAX_ATTEMPTS = 5;
 const LOCK_SECONDS = 30;
@@ -32,7 +34,7 @@ export function LoginForm({ notApproved }: { notApproved: boolean }) {
     if (lock > 0 || loading) return;
     setError("");
     if (!email.trim() || !password) {
-      setError("ইমেইল ও পাসওয়ার্ড দিন");
+      setError("ইউজারনেম ও পাসওয়ার্ড দিন");
       return;
     }
     if (!navigator.onLine) {
@@ -41,20 +43,21 @@ export function LoginForm({ notApproved }: { notApproved: boolean }) {
     }
     setLoading(true);
     const { error: err } = await createClient().auth.signInWithPassword({
-      email: email.trim(),
+      email: toLoginEmail(email),
       password,
     });
     if (err) {
       setLoading(false);
       const n = fails + 1;
       setFails(n);
-      setError("ইমেইল বা পাসওয়ার্ড সঠিক নয়");
+      setError("ইউজারনেম বা পাসওয়ার্ড সঠিক নয়");
       if (n >= MAX_ATTEMPTS) {
         setLock(LOCK_SECONDS);
         setFails(0);
       }
       return;
     }
+    sessionStorage.setItem(SESSION_FLAG, "1");
     // full navigation so middleware re-checks approval with fresh cookies
     window.location.href = "/dashboard";
   }
@@ -72,9 +75,9 @@ export function LoginForm({ notApproved }: { notApproved: boolean }) {
           অনেকবার ভুল হয়েছে। {toBn(lock)} সেকেন্ড পর আবার চেষ্টা করুন।
         </p>
       )}
-      <Field label="ইমেইল" htmlFor="email">
-        <input id="email" type="email" autoComplete="username" inputMode="email" className={inputClass}
-          value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+      <Field label="ইউজারনেম" htmlFor="email">
+        <input id="email" type="text" autoComplete="username" autoCapitalize="none" autoCorrect="off" className={inputClass}
+          value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ইউজারনেম লিখুন" />
       </Field>
       <Field label="পাসওয়ার্ড" htmlFor="password">
         <div className="relative">

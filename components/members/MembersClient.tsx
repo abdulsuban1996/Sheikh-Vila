@@ -137,7 +137,7 @@ export function MembersClient({ members, meId }: { members: Profile[]; meId: str
         <form id="add-member-form" onSubmit={submitAdd} className="space-y-4">
           <Field label="নাম" htmlFor="m-name"><div className="relative"><UserRound size={19} className={iconCls} /><input id="m-name" required className={`${inputClass} pl-11`} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div></Field>
           <Field label="ফোন" htmlFor="m-phone"><div className="relative"><Phone size={19} className={iconCls} /><input id="m-phone" type="tel" inputMode="tel" className={`${inputClass} pl-11`} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div></Field>
-          <Field label="ইমেইল" htmlFor="m-email"><div className="relative"><Mail size={19} className={iconCls} /><input id="m-email" type="email" required className={`${inputClass} pl-11`} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div></Field>
+          <Field label="ইউজারনেম (ইংরেজিতে, যেমন: rahim)" htmlFor="m-email"><div className="relative"><Mail size={19} className={iconCls} /><input id="m-email" type="text" required autoCapitalize="none" autoCorrect="off" autoComplete="off" className={`${inputClass} pl-11`} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div></Field>
           <Field label="পাসওয়ার্ড (কমপক্ষে ৮ অক্ষর)" htmlFor="m-pass"><div className="relative"><Lock size={19} className={iconCls} /><input id="m-pass" type="text" minLength={8} required autoComplete="off" className={`${inputClass} pl-11`} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></div></Field>
         </form>
       </Modal>

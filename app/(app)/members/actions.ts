@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { toLoginEmail, USERNAME_RE } from "@/lib/username";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -31,10 +32,15 @@ export async function addMember(input: {
 }): Promise<Result> {
   if (!(await assertAdmin())) return DENIED;
   const name = input.name.trim();
-  const email = input.email.trim().toLowerCase();
+  // `input.email` carries the username (a real email is also accepted)
+  const raw = input.email.trim().toLowerCase();
   const phone = input.phone.trim();
   if (!name) return { ok: false, error: "নাম লিখুন" };
-  if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "সঠিক ইমেইল দিন" };
+  if (!raw.includes("@") && !USERNAME_RE.test(raw)) {
+    return { ok: false, error: "ইউজারনেম ৩-৩০ অক্ষরের হতে হবে (ইংরেজি ছোট হাতের অক্ষর, সংখ্যা, . _ -)" };
+  }
+  const email = toLoginEmail(raw);
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "সঠিক ইউজারনেম দিন" };
   if (input.password.length < 8) return { ok: false, error: "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে" };
 
   const admin = createAdminClient();
@@ -46,7 +52,7 @@ export async function addMember(input: {
   });
   if (error || !data.user) {
     const exists = /already|registered|exists/i.test(error?.message ?? "");
-    return { ok: false, error: exists ? "এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট আছে" : "সদস্য তৈরি করা যায়নি" };
+    return { ok: false, error: exists ? "এই ইউজারনেম আগেই নেওয়া হয়েছে" : "সদস্য তৈরি করা যায়নি" };
   }
 
   const { error: upErr } = await admin

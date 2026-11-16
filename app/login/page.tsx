@@ -25,7 +25,15 @@ export default async function LoginPage({
         </p>
       </div>
       <p className="mt-6 text-center text-xs font-medium text-emerald-100/90 sm:text-sm">
-        Developed with 💙 by Saddam Bin Mazid
+        Developed with 💙 by{" "}
+        <a
+          href="https://www.facebook.com/share/1EJ5XinDUQ/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold underline underline-offset-2 hover:text-white"
+        >
+          Saddam Bin Mazid
+        </a>
       </p>
     </main>
   );

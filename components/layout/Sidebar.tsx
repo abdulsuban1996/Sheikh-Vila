@@ -63,7 +63,15 @@ export function Sidebar({
           লগআউট
         </button>
         <p className="mt-3 text-center text-[11px] text-emerald-200/70">
-          Developed with 💙 by Saddam Bin Mazid
+          Developed with 💙 by{" "}
+          <a
+            href="https://www.facebook.com/share/1EJ5XinDUQ/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold underline underline-offset-2 hover:text-white"
+          >
+            Saddam Bin Mazid
+          </a>
         </p>
       </div>
     </div>

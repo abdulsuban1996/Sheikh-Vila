@@ -11,7 +11,7 @@ export default async function AppLayout({
   const { profile } = await requireMember();
   return (
     <AppShell isAdmin={profile.role === "admin"} dateText={formatDateBn(new Date())}>
-      <SessionGuard isAdmin={profile.role === "admin"} />
+      <SessionGuard />
       {children}
     </AppShell>
   );

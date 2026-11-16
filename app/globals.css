@@ -53,7 +53,7 @@ body {
   100% { background-position: 100% 50%; }
 }
 
-.page-enter { animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.page-enter { animation: fade-in 0.15s ease-out both; }
 .animate-rise { animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-fade { animation: fade-in 0.25s ease-out both; }
 .animate-pop { animation: pop-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both; }

@@ -3,13 +3,17 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
 
-/** Returns the signed-in, approved user + profile or redirects to /login. */
+/**
+ * Returns the signed-in, approved user + profile or redirects to /login.
+ * The JWT is verified locally (getClaims) instead of a network round trip to
+ * Supabase Auth; every database query still runs under RLS with that JWT.
+ */
 export const requireMember = cache(async () => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (!claims?.sub) redirect("/login");
+  const user = { id: claims.sub, email: (claims.email as string | undefined) ?? null };
 
   const { data: profile } = await supabase
     .from("profiles")

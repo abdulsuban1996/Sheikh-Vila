@@ -22,9 +22,10 @@ export async function middleware(request: NextRequest) {
   );
 
   const path = request.nextUrl.pathname;
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Local JWT verification (no network round trip). The approval check
+  // (profiles.is_active) happens once per request in requireMember().
+  const { data: authData } = await supabase.auth.getClaims();
+  const user = authData?.claims?.sub ? { id: authData.claims.sub } : null;
 
   const redirectTo = (to: string, clearSession = false) => {
     const url = request.nextUrl.clone();
@@ -42,18 +43,6 @@ export async function middleware(request: NextRequest) {
 
   if (!user) {
     return path === "/login" ? response : redirectTo("/login");
-  }
-
-  // Signed in: the profile must exist and be approved.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_active")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || !profile.is_active) {
-    await supabase.auth.signOut();
-    return redirectTo("/login?error=not_approved", true);
   }
 
   if (path === "/login" || path === "/") return redirectTo("/dashboard");

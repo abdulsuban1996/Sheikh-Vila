@@ -8,6 +8,7 @@ import { Field } from "@/components/ui/Modal";
 import { toBn } from "@/lib/bn";
 import { toLoginEmail } from "@/lib/username";
 import { SESSION_FLAG } from "@/components/auth/SessionGuard";
+import { LAST_USER_KEY } from "@/lib/logout";
 
 const MAX_ATTEMPTS = 5;
 const LOCK_SECONDS = 30;
@@ -22,6 +23,24 @@ export function LoginForm({ notApproved }: { notApproved: boolean }) {
   const [loading, setLoading] = useState(false);
   const [fails, setFails] = useState(0);
   const [lock, setLock] = useState(0);
+
+  // prefill the last used username and, if the browser has it saved, the password
+  useEffect(() => {
+    try {
+      const last = localStorage.getItem(LAST_USER_KEY);
+      if (last) setEmail(last);
+      const get = navigator.credentials?.get as ((o: unknown) => Promise<Credential | null>) | undefined;
+      if (get && "PasswordCredential" in window) {
+        get.call(navigator.credentials, { password: true, mediation: "optional" }).then((c) => {
+          const pc = c as (Credential & { id: string; password?: string }) | null;
+          if (pc?.password) {
+            setEmail(pc.id);
+            setPassword(pc.password);
+          }
+        }).catch(() => {});
+      }
+    } catch {}
+  }, []);
 
   useEffect(() => {
     if (lock <= 0) return;
@@ -58,6 +77,14 @@ export function LoginForm({ notApproved }: { notApproved: boolean }) {
       return;
     }
     sessionStorage.setItem(SESSION_FLAG, "1");
+    try {
+      localStorage.setItem(LAST_USER_KEY, email.trim());
+      // hand the password to the browser's own password manager (never stored by the app)
+      const PC = (window as unknown as { PasswordCredential?: new (d: { id: string; password: string; name?: string }) => Credential }).PasswordCredential;
+      if (PC && navigator.credentials) {
+        await navigator.credentials.store(new PC({ id: email.trim(), password, name: email.trim() }));
+      }
+    } catch {}
     // full navigation so middleware re-checks approval with fresh cookies
     window.location.href = "/dashboard";
   }

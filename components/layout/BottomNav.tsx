@@ -9,7 +9,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="প্রধান মেনু"
-      className="no-print fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="no-print fixed inset-x-0 bottom-0 z-30 border-t border-emerald-950/30 bg-emerald-900 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.15)] lg:hidden"
     >
       <ul className="grid grid-cols-4">
         {BOTTOM_NAV.map((n) => {
@@ -21,10 +21,10 @@ export function BottomNav() {
                 href={n.href}
                 aria-current={active ? "page" : undefined}
                 className={`flex min-h-[60px] flex-col items-center justify-center gap-0.5 text-xs font-semibold ${
-                  active ? "text-emerald-700" : "text-slate-500"
+                  active ? "text-white" : "text-emerald-200/80"
                 }`}
               >
-                <span className={`rounded-full px-4 py-1 ${active ? "bg-emerald-100" : ""}`}>
+                <span className={`rounded-full px-4 py-1 ${active ? "bg-white/20" : ""}`}>
                   <Icon size={22} />
                 </span>
                 {n.label}

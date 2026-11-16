@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { KeyRound, Phone, Plus, UserPlus, Users, Mail, Lock, UserRound } from "lucide-react";
+import { KeyRound, Pencil, Phone, Plus, UserPlus, Users, Mail, Lock, UserRound } from "lucide-react";
 import { SectionCard, EmptyState } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button, inputClass } from "@/components/ui/Button";
 import { Modal, Field } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { addMember, resetPassword, setAccess } from "@/app/(app)/members/actions";
+import { addMember, resetPassword, setAccess, updateMember } from "@/app/(app)/members/actions";
 import { toBn } from "@/lib/bn";
 import type { Profile } from "@/lib/types";
 
@@ -18,6 +18,8 @@ export function MembersClient({ members, meId }: { members: Profile[]; meId: str
   const [pending, start] = useTransition();
   const [addOpen, setAddOpen] = useState(false);
   const [resetFor, setResetFor] = useState<Profile | null>(null);
+  const [editFor, setEditFor] = useState<Profile | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", phone: "" });
   const [form, setForm] = useState({ name: "", phone: "", email: "", password: "" });
   const [newPass, setNewPass] = useState("");
 
@@ -36,6 +38,22 @@ export function MembersClient({ members, meId }: { members: Profile[]; meId: str
       toast("নতুন সদস্য যোগ হয়েছে");
       setForm({ name: "", phone: "", email: "", password: "" });
       setAddOpen(false);
+    });
+  }
+
+  function openEdit(m: Profile) {
+    setEditForm({ name: m.full_name, phone: m.phone ?? "" });
+    setEditFor(m);
+  }
+
+  function submitEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editFor || !online()) return;
+    start(async () => {
+      const r = await updateMember(editFor.id, editForm);
+      if (!r.ok) return toast(r.error, "error");
+      toast("সদস্যের তথ্য সেভ হয়েছে");
+      setEditFor(null);
     });
   }
 
@@ -111,6 +129,9 @@ export function MembersClient({ members, meId }: { members: Profile[]; meId: str
                     </span>
                     {m.is_active ? "অ্যাক্সেস আছে" : "বন্ধ"}
                   </button>
+                  <Button variant="secondary" onClick={() => openEdit(m)} className="!px-3">
+                    <Pencil size={18} /> এডিট
+                  </Button>
                   <Button variant="secondary" onClick={() => setResetFor(m)} className="!px-3">
                     <KeyRound size={18} /> পাসওয়ার্ড রিসেট
                   </Button>
@@ -139,6 +160,25 @@ export function MembersClient({ members, meId }: { members: Profile[]; meId: str
           <Field label="ফোন" htmlFor="m-phone"><div className="relative"><Phone size={19} className={iconCls} /><input id="m-phone" type="tel" inputMode="tel" className={`${inputClass} pl-11`} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div></Field>
           <Field label="ইউজারনেম (ইংরেজিতে, যেমন: rahim)" htmlFor="m-email"><div className="relative"><Mail size={19} className={iconCls} /><input id="m-email" type="text" required autoCapitalize="none" autoCorrect="off" autoComplete="off" className={`${inputClass} pl-11`} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div></Field>
           <Field label="পাসওয়ার্ড (কমপক্ষে ৮ অক্ষর)" htmlFor="m-pass"><div className="relative"><Lock size={19} className={iconCls} /><input id="m-pass" type="text" minLength={8} required autoComplete="off" className={`${inputClass} pl-11`} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></div></Field>
+        </form>
+      </Modal>
+
+      <Modal
+        open={!!editFor}
+        onClose={() => setEditFor(null)}
+        title="সদস্য এডিট"
+        subtitle={editFor?.full_name}
+        icon={<Pencil size={22} />}
+        footer={
+          <div className="flex gap-3">
+            <Button type="button" variant="secondary" className="flex-1" onClick={() => setEditFor(null)}>বাতিল</Button>
+            <Button type="submit" form="edit-member-form" loading={pending} className="flex-[2]">সেভ করুন</Button>
+          </div>
+        }
+      >
+        <form id="edit-member-form" onSubmit={submitEdit} className="space-y-4">
+          <Field label="নাম" htmlFor="e-name"><div className="relative"><UserRound size={19} className={iconCls} /><input id="e-name" required className={`${inputClass} pl-11`} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} /></div></Field>
+          <Field label="ফোন" htmlFor="e-phone"><div className="relative"><Phone size={19} className={iconCls} /><input id="e-phone" type="tel" inputMode="tel" placeholder="যেমন: 01712345678" className={`${inputClass} pl-11`} value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} /></div></Field>
         </form>
       </Modal>
 

@@ -72,6 +72,25 @@ export async function resetPassword(memberId: string, password: string): Promise
   return error ? { ok: false, error: "পাসওয়ার্ড পরিবর্তন করা যায়নি" } : { ok: true };
 }
 
+export async function updateMember(memberId: string, input: { name: string; phone: string }): Promise<Result> {
+  if (!(await assertAdmin())) return DENIED;
+  const name = input.name.trim();
+  const phone = input.phone.trim().replace(/[\s-]/g, "");
+  if (!name) return { ok: false, error: "নাম লিখুন" };
+  if (phone && !/^\+?\d{6,15}$/.test(phone)) return { ok: false, error: "সঠিক ফোন নম্বর দিন" };
+  // Plain (RLS-bound) client: the admin policy allows this update.
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ full_name: name, phone: phone || null })
+    .eq("id", memberId)
+    .select("id");
+  if (error || !data || data.length === 0) return { ok: false, error: "পরিবর্তন করা যায়নি" };
+  revalidatePath("/members");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function setAccess(memberId: string, active: boolean): Promise<Result> {
   const adminId = await assertAdmin();
   if (!adminId) return DENIED;

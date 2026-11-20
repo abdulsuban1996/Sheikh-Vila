@@ -105,36 +105,49 @@ export function MembersClient({ members, meId }: { members: Profile[]; meId: str
                     {m.full_name.slice(0, 1)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-slate-800">
-                      {m.full_name} {m.id === meId && <span className="text-sm text-slate-400">(আমি)</span>}
-                    </p>
-                    <p className="flex items-center gap-1 text-sm text-slate-500">
-                      <Phone size={14} /> {m.phone ? toBn(m.phone) : "—"}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <p className="truncate font-semibold text-slate-800">{m.full_name}</p>
+                      {m.id === meId && <span className="text-xs text-slate-400">(আমি)</span>}
+                      <Badge tone={m.role === "admin" ? "purple" : "blue"}>{m.role === "admin" ? "অ্যাডমিন" : "সদস্য"}</Badge>
+                    </div>
+                    <p className="mt-0.5 flex items-center gap-1 text-sm text-slate-500">
+                      <Phone size={14} /> {m.phone ? toBn(m.phone) : "নম্বর দেওয়া নেই"}
                     </p>
                   </div>
-                  <Badge tone={m.role === "admin" ? "purple" : "blue"}>{m.role === "admin" ? "অ্যাডমিন" : "সদস্য"}</Badge>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center justify-between gap-2 sm:justify-end">
                   <button
                     role="switch"
                     aria-checked={m.is_active}
                     disabled={pending || m.id === meId}
                     onClick={() => toggle(m)}
-                    className={`flex min-h-[44px] items-center gap-2 rounded-xl px-3 text-sm font-semibold disabled:opacity-60 ${
+                    className={`flex min-h-[44px] w-[148px] items-center gap-2 rounded-xl px-3 text-sm font-semibold disabled:opacity-60 ${
                       m.is_active ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
                     }`}
                   >
-                    <span className={`relative h-6 w-11 rounded-full transition ${m.is_active ? "bg-emerald-500" : "bg-slate-300"}`}>
+                    <span className={`relative h-6 w-11 shrink-0 rounded-full transition ${m.is_active ? "bg-emerald-500" : "bg-slate-300"}`}>
                       <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${m.is_active ? "left-[22px]" : "left-0.5"}`} />
                     </span>
                     {m.is_active ? "অ্যাক্সেস আছে" : "বন্ধ"}
                   </button>
-                  <Button variant="secondary" onClick={() => openEdit(m)} className="!px-3">
-                    <Pencil size={18} /> এডিট
-                  </Button>
-                  <Button variant="secondary" onClick={() => setResetFor(m)} className="!px-3">
-                    <KeyRound size={18} /> পাসওয়ার্ড রিসেট
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEdit(m)}
+                      title="এডিট"
+                      aria-label="এডিট"
+                      className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-100 hover:bg-blue-100"
+                    >
+                      <Pencil size={19} />
+                    </button>
+                    <button
+                      onClick={() => setResetFor(m)}
+                      title="পাসওয়ার্ড রিসেট"
+                      aria-label="পাসওয়ার্ড রিসেট"
+                      className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-700 ring-1 ring-amber-100 hover:bg-amber-100"
+                    >
+                      <KeyRound size={19} />
+                    </button>
+                  </div>
                 </div>
               </li>
             ))}
